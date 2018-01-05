@@ -1,7 +1,7 @@
 
           COSMOLOGICAL PARAMETER CONTAINER CLASS SPECIFICATION
         
-                          v0.1 (2018-01-04)
+                          v0.1 (2018-01-05)
 
 This document specifies a basic container class for cosmological parameters. 
 It may be implemented in any programming language. The important features of 
@@ -12,11 +12,12 @@ the class can be extended are specified, to ensure interoperability between
 different codes.
 
 
-BASE SET OF PARAMETERS
+1. BASE SET OF PARAMETERS
 
 The following parameters MUST exist as top-level members of the class. All of 
 the parameters MUST be stored as floating point numbers (single or double 
-precision). The names of these parameters MUST match the names defined here, including capitalization and underscores.
+precision). The names of these parameters MUST match the names defined here, 
+including capitalization and underscores.
 
   (1)  Omega_c - Fractional density of CDM relative to critical density
   (2)  Omega_b - Fractional density of baryons relative to critical density
@@ -49,16 +50,16 @@ Notes:
    that were specified). For example, if A_s was specified by the user, 
    sigma_8 must be set to NaN unless its value is subsequently calculated by 
    performing the appropriate integral over the linear matter power spectrum.
- - (FIXME): Parameters (6), (12), and (14) must be consistent. It is assumed 
+ - (FIXME): Parameters (6), (12), and (14) MUST be consistent. It is assumed 
    that any massive neutrinos all have identical masses.
 
 
-DEFAULT VALUES AND CONSISTENCY CONDITIONS
+2. DEFAULT VALUES AND CONSISTENCY CONDITIONS
 
-Parameters (1), (2), (5), (11), and (16) MUST be given user-defined input 
-values. They have no default values. One of (15) or (17) MUST also be given a 
-user-defined input value (the other can be set to NaN/None, or can be derived; 
-see note above).
+Parameters (1), (2), (5), (11), and (16) are 'compulsory parameters' and MUST 
+be given (or derived from) user-defined input values. They have no default 
+values. One of (15) or (17) MUST also be given a user-defined input value (the 
+other can be set to NaN/None, or can be derived; see note above).
 
 Parameter (3) MUST satisfy the condition:
     Omega_m = Omega_c + Omega_b + Omega_n_mass
@@ -73,9 +74,90 @@ Parameter (9) has a default value of -1.0.
 Parameter (13) has a default value of 3.046.
 
 
-EXTENSIONS OF THE CLASS
+3. INTERCHANGE FORMAT
+
+This section specifies a common file format for interchanging cosmological 
+parameters between different codes. This is provided to ensure that there is a 
+well-defined standard for how parameters should be input and output by any 
+code. Other methods of interchanging parameters (e.g. by passing objects or 
+other types of file) can be used, but this format SHOULD be supported by all 
+implementations of the standard.
+
+You may implement this specification in your code however you see fit. However, 
+you SHOULD provide the following functions (prefixes may be added but the base 
+names of the functions SHOULD be preserved):
+
+  read_cosmo_desc
+  write_cosmo_desc
+  validate_cosmo_desc
+
+These functions read and write parameters and their values from text files with 
+a standardized format, defined as follows.
+
+  (1)  The file MUST be in ASCII format, with no unicode characters allowed.
+  (2)  Lines beginning with '#' are comments and MUST be ignored. No other 
+       comment characters are allowed.
+  (3)  Each line denotes a single cosmological parameter and its value. Values 
+       MUST NOT be split over multiple lines.
+  (4)  The format of each line is 'cosmo_parameter_name:value\n', where 
+       'cosmo_parameter_name' is the standardized name of the parameter, as 
+       defined above, and 'value' is the floating point value of the parameter. 
+       The names of these parameters MUST match the names defined in Section 1, 
+       including capitalization and underscores. Parameters that have names 
+       with different capitalization/underscores MUST be treated as separate 
+       parameters.
+  (5)  The floating point value may be provided in any standard string format, 
+       e.g. floating point representation ('3.141') or scientific notation 
+       ('3.141e+00'). There are no requirements on the number of significant 
+       figures.
+  (6)  The line must end with the standard newline character, "\n".
+  (7)  White space MAY be included before and after the parameter name and/or 
+       value, for the sake of human readability. It MUST be ignored (trimmed) 
+       when reading the file. Only the standard space character may be used for 
+       white space. Tab characters ('\t') are NOT allowed.
+  (8)  The ordering of the parameters is not specified. It is recommended that 
+       the base parameters are listed first though, followed by extension 
+       parameters.
+  (9)  All of the base parameters SHOULD be included in the output. If they are 
+       not included in the file, they MUST be assumed to take their default 
+       values, as specified above. (The 'compulsory parameters' do not have 
+       default values, so if any compulsory parameter is not included in the 
+       file, it is invalid and an error MUST be raised.)
+  (10) Some extension parameters may require multiple values to be specified. 
+       In this case, the parameter values SHOULD be provided using a comma-
+       separated list on a single line. Whitespace should be treated as in 
+       point (7).
+  (11) Derived parameters (those that can be calculated from other input 
+       parameters) MAY be included in the file. An implementation MAY ignore 
+       these values and calculate the derived parameters itself, however. In 
+       this case, the code SHOULD compare its own calculation of the derived 
+       parameter with the value in the file and SHOULD include the comparison 
+       in debugging output (e.g. log files or warnings).
+
+FIXME: Should we specify how hashes can be created? This would require a 
+standard ordering and a standard floating point precision.
+
+FIXME: Should we spcify how non-floating point parameters can be used?
+
+The 'validate_cosmo_desc' function SHOULD be provided to ensure that the 
+parameters and their values are valid and conform to this standard. If a 
+'validate_cosmo_desc' function is provided, it MUST test all of the conditions 
+in Section 2 of this specification. It MUST NOT test the conditions in this 
+section (Section 3), as they only concern the validity of the file format and 
+not the parameters themselves.
+
+Instead, the conditions in this section SHOULD be tested by 'read_cosmo_desc'. 
+If these conditions are not satisfied by a given file, the 'read_cosmo_desc' 
+function MUST raise an error. This behavior is intended to prevent ambiguous 
+conditions arising.
+
+
+4. EXTENSIONS OF THE CLASS
 
 New parameters should occupy a distinct namespace from the base parameters.
+
+FIXME: Failing gracefully: when can extension parameters be ignored, and when 
+should a program stop and say "I can't deal with these"?
 
 Extensions may replace some of the base parameters, or make them obsolete. For 
 example, an extension might describe a model where w_a is no longer a 
