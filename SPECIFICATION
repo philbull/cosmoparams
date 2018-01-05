@@ -1,0 +1,83 @@
+
+          COSMOLOGICAL PARAMETER CONTAINER CLASS SPECIFICATION
+        
+                          v0.1 (2018-01-04)
+
+This document specifies a basic container class for cosmological parameters. 
+It may be implemented in any programming language. The important features of 
+the specification are that (a) a base set of cosmological parameters is 
+defined, with standardized names and meanings; (b) there are conditions to 
+guarantee the consistency of the parameter values; and (c) the ways in which 
+the class can be extended are specified, to ensure interoperability between 
+different codes.
+
+
+BASE SET OF PARAMETERS
+
+The following parameters MUST exist as top-level members of the class. All of 
+the parameters MUST be stored as floating point numbers (single or double 
+precision). The names of these parameters MUST match the names defined here, including capitalization and underscores.
+
+  (1)  Omega_c - Fractional density of CDM relative to critical density
+  (2)  Omega_b - Fractional density of baryons relative to critical density
+  (3)  Omega_m - Fractional density of all matter relative to critical density
+  (4)  Omega_k - Fractional density of curvature relative to critical density
+  (5)  Omega_l - Fractional density of Lambda/DE relative to critical density
+  (6)  Omega_n_mass - Omega_nu for massive neutrinos
+  (7)  Omega_n_rel - Omega_nu for massless neutrinos
+  (8)  Omega_g - Fractional density of photons relative to critical density
+  (9)  w0 - Dark energy equation of state (value at a=1)
+  (10) wa - Dark energy equation of state (controls asymptotic value as a -> 0)
+  (11) h - Dimensionless Hubble parameter
+  (12) N_nu_mass - Number of different species of massive neutrinos
+  (13) N_nu_rel - Effective number of massless neutrinos
+  (14) mnu - Sum of neutrino masses, in eV
+  (15) A_s - Primordial scalar power spectrum amplitude (dimensionless)
+  (16) n_s - Spectral index of primordial scalar power spectrum
+  (17) sigma_8 - Power spectrum amplitude, sigma_8
+
+Notes:
+ - Parameters (1)-(8) are defined with respect to the critical density at a=1.
+ - The values of all parameters must be positive semi-definite (>=0), except 
+   for parameters (4), (9), and (10).
+ - Parameters (9) and (10) are defined under the assumption that the dark 
+   energy equation of state is modeled as w(a) = w_0 + w_a (1 - a).
+ - The normalization of the matter power spectrum may be specified using EITHER 
+   parameter (15) or (17). The other parameter MUST then be set to a special 
+   value (e.g. NaN or None) UNLESS it is treated as a derived parameter (i.e. 
+   set to its correct value given the values of the cosmological parameters 
+   that were specified). For example, if A_s was specified by the user, 
+   sigma_8 must be set to NaN unless its value is subsequently calculated by 
+   performing the appropriate integral over the linear matter power spectrum.
+ - (FIXME): Parameters (6), (12), and (14) must be consistent. It is assumed 
+   that any massive neutrinos all have identical masses.
+
+
+DEFAULT VALUES AND CONSISTENCY CONDITIONS
+
+Parameters (1), (2), (5), (11), and (16) MUST be given user-defined input 
+values. They have no default values. One of (15) or (17) MUST also be given a 
+user-defined input value (the other can be set to NaN/None, or can be derived; 
+see note above).
+
+Parameter (3) MUST satisfy the condition:
+    Omega_m = Omega_c + Omega_b + Omega_n_mass
+
+Parameter (4) MUST satisfy the condition:
+    1 - Omega_k = Omega_m + Omega_l + Omega_g + Omega_n_rel
+
+Parameters (6), (7), (8), (10), (12), and (14) have default values of 0.0.
+
+Parameter (9) has a default value of -1.0.
+
+Parameter (13) has a default value of 3.046.
+
+
+EXTENSIONS OF THE CLASS
+
+New parameters should occupy a distinct namespace from the base parameters.
+
+Extensions may replace some of the base parameters, or make them obsolete. For 
+example, an extension might describe a model where w_a is no longer a 
+meaningful parameter. In this case <TODO>.
+
