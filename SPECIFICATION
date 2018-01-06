@@ -58,8 +58,8 @@ Notes:
 
 Parameters (1), (2), (5), (11), and (16) are 'compulsory parameters' and MUST 
 be given (or derived from) user-defined input values. They have no default 
-values. One of (15) or (17) MUST also be given a user-defined input value (the 
-other can be set to NaN/None, or can be derived; see note above).
+values. One of either (15) or (17) MUST also be given a user-defined input 
+value (the other can be set to NaN/None, or can be derived; see note above).
 
 Parameter (3) MUST satisfy the condition:
     Omega_m = Omega_c + Omega_b + Omega_n_mass
@@ -137,7 +137,7 @@ a standardized format, defined as follows.
 FIXME: Should we specify how hashes can be created? This would require a 
 standard ordering and a standard floating point precision.
 
-FIXME: Should we spcify how non-floating point parameters can be used?
+FIXME: Should we specify how non-floating point parameters can be used?
 
 The 'validate_cosmo_desc' function SHOULD be provided to ensure that the 
 parameters and their values are valid and conform to this standard. If a 
@@ -152,9 +152,73 @@ function MUST raise an error. This behavior is intended to prevent ambiguous
 conditions arising.
 
 
-4. EXTENSIONS OF THE CLASS
+4. CREATING HASHES OF PARAMETER VALUES
 
-New parameters should occupy a distinct namespace from the base parameters.
+Hashes are commonly used to test whether parameter values have changed. Hashes 
+for sets of parameters MAY be included alongside the cosmological parameters as 
+metadata. If hashes are included in the cosmological parameter container class, 
+they MUST have names that are prefixed with "hash". Hashes SHOULD be md5sum 
+digests in hexadecimal format.
+
+If hashes are included in interchange files (described in Section 3), they 
+should follow the same format as any other parameter, with the exception that 
+the "value" field will be a string representation of a hexadecimal number 
+instead of a floating point number.
+
+For consistency between different codes, hashes SHOULD be created from a set of 
+parameters according to the following rules:
+
+  (1)  Strings for each parameter MUST be concatenated together into a single 
+       string that is then hashed. The parameter strings MUST be in the format 
+       described in Section 3 (with the following additional conditions).
+  (2)  Before concatenation, the parameter strings MUST be ordered 
+       alphabetically, by parameter name.
+  (3)  All whitespace and newline characters MUST be removed from the string. 
+       Colons MUST be retained.
+  (4)  Floating point numbers MUST be in the format "%10.10e". They MUST NOT be 
+       in an arbitrary format, as was allowed in Section 3.
+  (5)  Parameters that are not defined (i.e. are set to NaN or None) MUST be 
+       replaced by zero, using the format string from item (4).
+
+For convenience, the following groupings of base parameters and standardized 
+hash names are defined:
+
+  hash_expansion:   Parameters that affect the expansion rate, H(z).
+                    Base parameters: (3, 4, 5, 7, 8, 9, 10, 11)
+                    
+  hash_growth:      Parameters that affect the linear growth rate, f(z).
+                    Base parameters: (3, 4, 5, 7, 8, 9, 10, 11)
+  
+  hash_powspec:     Parameters that affect the matter power spectrum, P(k).
+                    Base parameters: (1, 2, 4, 5, 6, 9, 10, 11, 12, 14, 15, 
+                                      16, 17)
+                    
+  hash_lensing:     Parameters that affect galaxy shear or convergence.
+                    Base parameters: (TODO)
+                    
+  hash_cmb:         Parameters that affect the unlensed CMB angular power 
+                    spectrum (T, E, B).
+                    Base parameters: (1, 2, 4, 5, 6, 7, 8, 9, 10)
+
+  hash_cmblens:     Parameters that affect the CMB lensing potential.
+                    Base parameters: (TODO)
+
+If the base class is extended with new parameters (see Section 5), and those 
+parameters affect one of the standard hashes defined above, they MUST be 
+included in the calculation of that hash, even though they are not base 
+parameters.
+
+
+5. EXTENSIONS OF THE CLASS
+(incomplete)
+
+New parameters should occupy a distinct namespace from the base parameters. The 
+namespace may be denoted using whatever convention is typical for the 
+programming language being used. When the parameters are output into the common 
+interchange format described in Section 3, however, the namespace MUST be 
+denoted using the format: "namespace_paramname", i.e. it must be prepended to 
+the parameter name, with an underscore as a separator. The namespace SHOULD NOT 
+include an underscore in its name.
 
 FIXME: Failing gracefully: when can extension parameters be ignored, and when 
 should a program stop and say "I can't deal with these"?
