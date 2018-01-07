@@ -174,7 +174,7 @@ parameters according to the following rules:
   (2)  Before concatenation, the parameter strings MUST be ordered 
        alphabetically, by parameter name.
   (3)  All whitespace and newline characters MUST be removed from the string. 
-       Colons MUST be retained.
+       Colons and commas MUST be retained.
   (4)  Floating point numbers MUST be in the format "%10.10e". They MUST NOT be 
        in an arbitrary format, as was allowed in Section 3.
   (5)  Parameters that are not defined (i.e. are set to NaN or None) MUST be 
