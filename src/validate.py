@@ -1,102 +1,5 @@
 #!/usr/bin/env python
 
-def read_cosmo_desc(filename):
-    """
-    Read parameters and their values from a standardized interchange file.
-    
-    Parameters
-    ----------
-    filename : str
-        Path of the file from which the parameters should be read.
-    
-    Returns
-    -------
-    params : dict
-        Dictionary of parameters and values read from the file.
-    """
-    # Load file as a sequence of strings
-    f = open(filename, 'r')
-    lines = f.readlines() # Effectively enforces (3.6)
-    f.close()
-    
-    params = {}
-    # Loop over lines and add to dict
-    for i, l in enumerate(lines):
-        
-        # Check for empty line and skip
-        if len(l.strip()) == 0: continue
-        
-        # Strip whitespace and newline from beginning/end of lines (3.7)
-        l = l.strip()
-        
-        # Test whether line is a comment (3.2)
-        if l[0] == '#': continue
-        
-        # Check for number of colons (only one is allowed) (3.3)
-        if l.count(":") != 1:
-            raise SyntaxError("More than one ':' found on line %d." % i)
-        
-        # Split into parameter : value pair and trim whitespace from the ends
-        pname, pval = l.split(":")
-        pname = pname.strip()
-        pval = pval.strip()
-        
-        # Add sequence parameter to dictionary
-        if "," in pval:
-            try:
-                vals = [float(v) for v in pval.split(",")] # List of floats
-            except:
-                vals = [v.strip() for v in pval.split(",")] # List of strings
-            continue
-            
-        # Add string or float parameter to dictionary
-        try:
-            params[pname] = float(pval)
-        except:
-            params[pname] = str(pval)
-    
-    # Validate 
-    #if not validate(params):
-    #    raise ValueError("Parameter set is not valid.")
-    return params
-
-
-def write_cosmo_desc(filename, params):
-    """
-    Write parameters out to a file in a standardized interchange format.
-    
-    Parameters
-    ----------
-    filename : str
-        Path where the file should be saved.
-    
-    params : dict
-        Dictionary containing parameters and their values.
-    """
-    
-    # Loop over parameters, adding a parameter per line
-    lines = []
-    for p in params.keys():
-        assert(" " not in p)
-        
-        # Handle lists/arrays/tuples
-        if hasattr(params[p], '__iter__'):
-            val = ",".join(["%10.10e" % v for v in params[p]])
-            lines.append( "%s:%s\n" % (p, val)) )
-            continue
-            
-        # Handle float vs. string parameters
-        try:
-            lines.append( "%30s : %10.10e\n" % (p, float(params[p])) )
-        except:
-            lines.append( "%30s : %10.10e\n" % (p, str(params[p])) )
-    
-    lines = "".join(lines)
-    f = open(filename, 'w')
-    f.write(lines)
-    f.close()
-
-
 def compulsory_parameters_exist(param_list):
     """
     Check if compulsory parameters exist in a set of parameter names.
@@ -117,9 +20,10 @@ def compulsory_parameters_exist(param_list):
             if not any_found:
                 all_compulsory = False
                 missing.append(c)
-        
+            continue
+            
         # Individual parameters
-        if c not in param_list():
+        if c not in param_list:
             all_compulsory = False
             missing.append(c)
             
@@ -187,25 +91,26 @@ def validate_cosmo_desc(params):
     valid : bool
         Whether the parameter set was valid (True) or invalid (False).
     """
-    # TODO
+    valid = True
     
     # Check that compulsory parameters exist
     all_compulsory, missing = compulsory_parameters_exist(params.keys())
+    if not all_compulsory: valid = False
     
-    # Make sure all base parameters are specified
+    # Make sure all base parameters are specified before performing more tests
     params = fill_missing_base_params(params)
     
     # Make sure that consistency conditions are satisfied
     if params['Omega_m'] != (  params['Omega_c'] + params['Omega_b'] \
                              + params['Omega_n_mass'] ):
-        pass
+        valid = False
     
     if params['Omega_k'] != 1. - (  params['Omega_m'] + params['Omega_l'] 
                                   + params['Omega_g'] + params['Omega_n_rel'] ):
-        pass
+        valid = False
     
     # Return value
-    #return valid
+    return valid
 
 
 def validate_file_desc(filename):
@@ -243,13 +148,14 @@ def validate_file_desc(filename):
         if len(l.strip()) == 0: continue
         
         # Check for tab characters (3.7)
-        if "\t" in l: errors.append("%3d: Tab characters are not allowed." % i)
+        if "\t" in l:
+            errors.append("Line %d: Tab characters are not allowed." % i)
         
         # Check whether disallowed unicode characters were used (3.1)
         try:
             l.decode('ascii')
         except UnicodeDecodeError:
-            errors.append("%3d: Unicode characters are not allowed." % i)
+            errors.append("Line %d: Unicode characters are not allowed." % i)
         
         # Strip whitespace and newline from beginning/end of lines (3.7)
         l = l.strip()
@@ -258,8 +164,10 @@ def validate_file_desc(filename):
         if l[0] == '#': continue
         
         # Check for number of colons (only one is allowed) (3.3)
-        if l.count(":") == 0: errors.append("%3d: Missing separator ':'." % i)
-        if l.count(":") > 1: errors.append("%3d: Too many ':' separators." % i)
+        if l.count(":") == 0:
+            errors.append("Line %d: Missing separator ':'." % i)
+        if l.count(":") > 1:
+            errors.append("Line %d: Too many ':' separators." % i)
         
         # Split into parameter : value pair and trim whitespace from the ends
         pname, pval = l.split(":")
@@ -270,7 +178,8 @@ def validate_file_desc(filename):
         invalid_chars = '!"#$%&\'()*+,-./;<=>?@[\\]^{|}~'
         for c in invalid_chars:
             if c in pname:
-                errors.append("%3d: Invalid character '%s' in parameter name." 
+                errors.append("Line %d: "
+                              "Invalid character '%s' in parameter name." 
                               % (i, c))
         
         # Add parameter to dictionary
@@ -284,12 +193,151 @@ def validate_file_desc(filename):
     
     # Error message if compulsory parameters not found
     if not all_compulsory:
-        errors.append("%3d: Compulsory parameters missing (%s)." % (i, missing))
+        errors.append("Line %d: Compulsory parameters missing (%s)." \
+                      % (i, missing))
     
     if len(errors) == 0:
         return True, errors
     return False, errors
+
+
+def read_cosmo_desc(filename):
+    """
+    Read parameters and their values from a standardized interchange file.
     
+    Parameters
+    ----------
+    filename : str
+        Path of the file from which the parameters should be read.
+    
+    Returns
+    -------
+    params : dict
+        Dictionary of parameters and values read from the file.
+    """
+    # Load file as a sequence of strings
+    f = open(filename, 'r')
+    lines = f.readlines() # Effectively enforces (3.6)
+    f.close()
+    
+    params = {}
+    # Loop over lines and add to dict
+    for i, l in enumerate(lines):
+        
+        # Check for empty line and skip
+        if len(l.strip()) == 0: continue
+        
+        # Strip whitespace and newline from beginning/end of lines (3.7)
+        l = l.strip()
+        
+        # Test whether line is a comment (3.2)
+        if l[0] == '#': continue
+        
+        # Check for number of colons (only one is allowed) (3.3)
+        if l.count(":") != 1:
+            raise SyntaxError("More than one ':' found on line %d." % i)
+        
+        # Split into parameter : value pair and trim whitespace from the ends
+        pname, pval = l.split(":")
+        pname = pname.strip()
+        pval = pval.strip()
+        
+        # Add sequence parameter to dictionary
+        if "," in pval:
+            try:
+                vals = [float(v) for v in pval.split(",")] # List of floats
+            except:
+                vals = [v.strip() for v in pval.split(",")] # List of strings
+            continue
+            
+        # Add string or float parameter to dictionary
+        try:
+            params[pname] = float(pval)
+        except:
+            params[pname] = str(pval)
+    
+    # Validate 
+    if not validate_cosmo_desc(params):
+        raise ValueError("Cosmological parameter set failed validity checks.")
+    return params
+
+
+def write_cosmo_desc(filename, params):
+    """
+    Write parameters out to a file in a standardized interchange format.
+    
+    Parameters
+    ----------
+    filename : str
+        Path where the file should be saved.
+    
+    params : dict
+        Dictionary containing parameters and their values.
+    """
+    # Loop over (sorted) parameters, adding a parameter per line
+    lines = []
+    pnames = params.keys()
+    pnames.sort()
+    for p in pnames:
+        assert(" " not in p)
+        
+        # Handle lists/arrays/tuples
+        if hasattr(params[p], '__iter__'):
+            val = ",".join(["%10.10e" % v for v in params[p]])
+            lines.append( "%s:%s\n" % (p, val) )
+            continue
+            
+        # Handle float vs. string parameters
+        try:
+            lines.append( "%20s : %10.10e\n" % (p, float(params[p])) )
+        except:
+            lines.append( "%20s : %s\n" % (p, str(params[p])) )
+    
+    lines = "".join(lines)
+    f = open(filename, 'w')
+    f.write(lines)
+    f.close()
+
 
 if __name__ == '__main__':
-    pass
+    
+    # Filename for example parameter file
+    fname = "test.params"
+    
+    # Example cosmological parameter dictionary
+    params = {
+        'Omega_c':  0.26,
+        'Omega_b':  0.05,
+        'Omega_l':  0.69,
+        'h':        0.69,
+        'sigma_8':  0.8,
+        'n_s':      0.96,
+    }
+    
+    # Validate cosmological parameters
+    valid = validate_cosmo_desc(params)
+    if valid:
+        print("Cosmological parameter set passed validity checks.")
+    else:
+        print("Cosmological parameter set failed validity checks.")
+    
+    # Write parameters to file
+    write_cosmo_desc(fname, params)
+    print("Wrote parameters to '%s'." % fname)
+    
+    # Test that the output file is valid
+    valid, errors = validate_file_desc(fname)
+    if valid:
+        print("File '%s' passed all validity checks." % fname)
+    else:
+        print("File '%s' failed some validity checks:" % fname)
+        for err in errors: print("\t%s" % err)
+    
+    # Read parameter file back in
+    params_in = read_cosmo_desc(fname)
+    valid = validate_cosmo_desc(params_in)
+    if valid:
+        print("Cosmological parameter set passed validity checks.")
+    else:
+        print("Cosmological parameter set failed validity checks.")
+    
