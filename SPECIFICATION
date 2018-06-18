@@ -1,7 +1,7 @@
 
           COSMOLOGICAL PARAMETER CONTAINER CLASS SPECIFICATION
         
-                          v0.1 (2018-01-05)
+                          v0.1 (2018-06-17)
 
 This document specifies a basic container class for cosmological parameters. 
 It may be implemented in any programming language. The important features of 
@@ -198,7 +198,7 @@ hash names are defined:
                     
   hash_cmb:         Parameters that affect the unlensed CMB angular power 
                     spectrum (T, E, B).
-                    Base parameters: (1, 2, 4, 5, 6, 7, 8, 9, 10)
+                    Base parameters: (1, 2, 4, 5, 6, 7, 8, 9, 10, 11) (FIXME)
 
   hash_cmblens:     Parameters that affect the CMB lensing potential.
                     Base parameters: (TODO)
@@ -216,9 +216,10 @@ New parameters should occupy a distinct namespace from the base parameters. The
 namespace may be denoted using whatever convention is typical for the 
 programming language being used. When the parameters are output into the common 
 interchange format described in Section 3, however, the namespace MUST be 
-denoted using the format: "namespace_paramname", i.e. it must be prepended to 
-the parameter name, with an underscore as a separator. The namespace SHOULD NOT 
-include an underscore in its name.
+denoted by adding a new block, i.e. parameters within the namespace must be 
+placed within a named block denoted by "[namespace]", where namespace is the 
+name of the namespace. This follows the convention for adding new blocks used 
+by the YAML standard.
 
 FIXME: Failing gracefully: when can extension parameters be ignored, and when 
 should a program stop and say "I can't deal with these"?
