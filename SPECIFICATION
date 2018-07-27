@@ -73,6 +73,8 @@ Parameter (9) has a default value of -1.0.
 
 Parameter (13) has a default value of 3.046.
 
+FIXME: Should define default Omega_g, i.e. don't set to zero.
+
 
 3. INTERCHANGE FORMAT
 
